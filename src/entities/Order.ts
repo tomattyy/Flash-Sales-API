@@ -3,20 +3,20 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from "typeor
 @Entity("orders")
 export class Order {
   @PrimaryGeneratedColumn("uuid")
-  id: string;
+  id!: string;
 
   @Column({ type: "varchar", length: 255 })
-  eventId: string;
+  eventId!: string;
 
   @Column({ type: "varchar", length: 255 })
-  userId: string;
+  userId!: string;
 
   @Column({ type: "int" })
-  quantity: number;
+  quantity!: number;
 
   @Column({ type: "varchar", length: 50, default: "confirmed" })
-  status: string;
+  status!: string;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 }
