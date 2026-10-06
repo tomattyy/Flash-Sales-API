@@ -13,16 +13,24 @@ const httpRequestDurationMicroseconds = new client.Histogram({
   buckets: [10, 50, 100, 300, 500, 1000, 2000, 5000],
 });
 
-export function requestMetrics(req: Request, res: Response, next: NextFunction) {
+export function requestMetrics(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   const start = Date.now();
-  
+
   res.on("finish", () => {
     const duration = Date.now() - start;
     httpRequestDurationMicroseconds
-      .labels(req.method, req.route ? req.route.path : req.path, res.statusCode.toString())
+      .labels(
+        req.method,
+        req.route ? req.route.path : req.path,
+        res.statusCode.toString(),
+      )
       .observe(duration);
   });
-  
+
   next();
 }
 
