@@ -32,7 +32,7 @@ jobs:
       localstack:
         image: localstack/localstack:4.14.0
         env:
-          SERVICES: s3
+          SERVICES: s3,kms
           AWS_DEFAULT_REGION: us-east-1
         ports:
           - 4566:4566

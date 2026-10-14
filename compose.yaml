@@ -51,7 +51,7 @@ services:
     profiles:
       - iac
     environment:
-      SERVICES: s3
+      SERVICES: s3,kms
       AWS_DEFAULT_REGION: us-east-1
     ports:
       - "127.0.0.1:4566:4566"

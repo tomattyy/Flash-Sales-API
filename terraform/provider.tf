@@ -18,6 +18,7 @@ provider "aws" {
   skip_requesting_account_id  = true
 
   endpoints {
-    s3 = var.localstack_endpoint
+    s3  = var.localstack_endpoint
+    kms = var.localstack_endpoint
   }
 }
