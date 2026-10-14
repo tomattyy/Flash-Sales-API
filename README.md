@@ -45,6 +45,8 @@ O workflow `CI - Security` executa:
 - Semgrep com as regras padrão para análise estática do código;
 - `npm audit` sobre as dependências de produção e desenvolvimento.
 
+As GitHub Actions são fixadas por SHA de commit para evitar alterações silenciosas atrás de tags mutáveis.
+
 O gate de dependências falha para vulnerabilidades de severidade alta ou crítica (`--audit-level=high`). Vulnerabilidades moderadas ainda são reportadas pelo npm, mas não bloqueiam este gate. Na configuração inicial, foi removido `ts-node-dev`, que não era utilizado e introduzia uma dependência vulnerável sem correção disponível; as vulnerabilidades restantes estão abaixo do limite configurado.
 
 Não há arquivos Terraform ou outra configuração de IaC neste estágio. A análise de IaC será adicionada junto da implementação de infraestrutura, para verificar arquivos reais em vez de executar uma etapa sem alvo.
