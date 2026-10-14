@@ -31,9 +31,9 @@ jobs:
         run: docker build --tag flash-sales-api:${{ github.sha }} .
 
       - name: Scan image for vulnerabilities
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
-          image-ref: flash-sales-api:${{ github.sha }}
+          scan-ref: flash-sales-api:${{ github.sha }}
           format: table
           exit-code: "1"
           ignore-unfixed: true
@@ -41,9 +41,9 @@ jobs:
           severity: HIGH,CRITICAL
 
       - name: Generate image SBOM
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
-          image-ref: flash-sales-api:${{ github.sha }}
+          scan-ref: flash-sales-api:${{ github.sha }}
           format: cyclonedx
           output: flash-sales-api.sbom.json
           exit-code: "0"
