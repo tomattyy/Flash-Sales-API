@@ -1,0 +1,98 @@
+name: CI - Terraform IaC
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - "feature/**"
+      - "fix/**"
+    paths:
+      - "terraform/**"
+      - "compose.yaml"
+      - ".github/workflows/pipeline-terraform.yaml"
+  pull_request:
+    branches:
+      - develop
+      - main
+    paths:
+      - "terraform/**"
+      - "compose.yaml"
+      - ".github/workflows/pipeline-terraform.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: Validate and test LocalStack infrastructure
+    runs-on: ubuntu-latest
+    services:
+      localstack:
+        image: localstack/localstack:4.14.0
+        env:
+          SERVICES: s3,kms
+          AWS_DEFAULT_REGION: us-east-1
+        ports:
+          - 4566:4566
+        options: >-
+          --health-cmd "curl -fsS http://localhost:4566/_localstack/health || exit 1"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+    env:
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_REGION: us-east-1
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd
+        with:
+          terraform_version: 1.16.6
+          terraform_wrapper: false
+
+      - name: Check Terraform formatting
+        run: terraform fmt -check -recursive
+        working-directory: terraform
+
+      - name: Initialize Terraform
+        run: terraform init -input=false
+        working-directory: terraform
+
+      - name: Validate Terraform
+        run: terraform validate
+        working-directory: terraform
+
+      - name: Scan Terraform configuration
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          scan-type: config
+          scan-ref: terraform
+          format: table
+          exit-code: "1"
+          severity: HIGH,CRITICAL
+
+      - name: Apply infrastructure to LocalStack
+        id: apply
+        run: terraform apply -auto-approve -input=false
+        working-directory: terraform
+        env:
+          TF_VAR_localstack_endpoint: http://localhost:4566
+
+      - name: Verify the exports bucket
+        run: terraform state show aws_s3_bucket.exports
+        working-directory: terraform
+
+      - name: Destroy LocalStack infrastructure
+        if: always() && steps.apply.outcome == 'success'
+        run: terraform destroy -auto-approve -input=false
+        working-directory: terraform
+        env:
+          TF_VAR_localstack_endpoint: http://localhost:4566

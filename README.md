@@ -77,3 +77,24 @@ A imagem somente é publicada depois do build, do scan Trivy e da geração do S
 - Pull requests, `develop` e branches de feature/fix são construídos e escaneados, mas não publicados.
 
 Para uma release, crie e envie uma tag semver de um commit já integrado em `main`. Os workflows de validação, segurança e container também são acionados para tags `v*`.
+
+## Terraform e LocalStack
+
+A configuração Terraform cria no LocalStack um bucket S3 privado reservado para persistência futura de exports e uma chave KMS gerenciada pelo cliente, usada para criptografar os objetos e com rotação habilitada. O endpoint é local, as credenciais `test` são fictícias e o state local não deve ser commitado. Atualmente, `ExportService` ainda gera o relatório em memória e não grava objetos no bucket.
+
+Pré-requisitos: Docker Engine, Docker Compose v2 e Terraform CLI `1.16.6`. No PowerShell, inicie LocalStack pelo profile `iac`:
+
+```powershell
+$env:AWS_ACCESS_KEY_ID = "test"
+$env:AWS_SECRET_ACCESS_KEY = "test"
+$env:AWS_DEFAULT_REGION = "us-east-1"
+docker compose --profile iac up -d localstack
+terraform -chdir=terraform init
+terraform -chdir=terraform plan -var="localstack_endpoint=http://localhost:4566"
+terraform -chdir=terraform apply -auto-approve -var="localstack_endpoint=http://localhost:4566"
+terraform -chdir=terraform output
+terraform -chdir=terraform destroy -auto-approve -var="localstack_endpoint=http://localhost:4566"
+docker compose --profile iac down
+```
+
+O provider AWS está configurado para apontar os serviços S3 e KMS somente ao endpoint do LocalStack e usar path-style addressing para S3. As credenciais de teste são fornecidas pelo ambiente e não ficam gravadas na configuração. Não use esses comandos contra uma conta AWS real. O workflow `CI - Terraform IaC` verifica formatação, inicialização, validação e segurança e aplica/destrói a infraestrutura em um LocalStack efêmero.
