@@ -64,4 +64,16 @@ Em shells POSIX, use `export DB_PASSWORD="uma-senha-local"` antes de executar `d
 
 Verifique a API em `http://localhost:3000/health` e as métricas em `http://localhost:3000/metrics`. Encerre com `docker compose down`; para apagar também os dados locais do banco, use `docker compose down --volumes`.
 
-O `Dockerfile` usa estágios separados para dependências, build e runtime, executa como usuário não-root e contém um healthcheck HTTP. O workflow `CI - Container` constrói a imagem em pull requests e pushes, bloqueia vulnerabilidades de severidade alta/crítica detectadas pelo Trivy e publica o SBOM CycloneDX como artefato do GitHub Actions. A imagem ainda não é publicada em registry; essa fase será tratada separadamente.
+O `Dockerfile` usa estágios separados para dependências, build e runtime, executa como usuário não-root e contém um healthcheck HTTP. O workflow `CI - Container` constrói a imagem em pull requests e pushes, bloqueia vulnerabilidades de severidade alta/crítica detectadas pelo Trivy e publica o SBOM CycloneDX como artefato do GitHub Actions.
+
+### Publicação no Docker Hub
+
+Configure os secrets do repositório GitHub `DOCKERHUB_USERNAME` e `DOCKERHUB_TOKEN`. Use um Docker Hub access token com permissão de escrita para o repositório de imagem `flash-sales-api` no namespace do usuário configurado.
+
+A imagem somente é publicada depois do build, do scan Trivy e da geração do SBOM:
+
+- Push em `main`: publica as tags `latest` e `sha-<commit completo>`.
+- Tag semver `vMAJOR.MINOR.PATCH` apontando para um commit já integrado em `main`: publica `vMAJOR.MINOR.PATCH`, `MAJOR.MINOR.PATCH` e `sha-<commit completo>`.
+- Pull requests, `develop` e branches de feature/fix são construídos e escaneados, mas não publicados.
+
+Para uma release, crie e envie uma tag semver de um commit já integrado em `main`. Os workflows de validação, segurança e container também são acionados para tags `v*`.

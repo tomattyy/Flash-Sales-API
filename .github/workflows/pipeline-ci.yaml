@@ -9,6 +9,8 @@ on:
       - "fix/**"
       - "release/**"
       - "hotfix/**"
+    tags:
+      - "v*"
   pull_request:
     branches:
       - develop
