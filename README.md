@@ -50,3 +50,18 @@ As GitHub Actions são fixadas por SHA de commit para evitar alterações silenc
 O gate de dependências falha para vulnerabilidades de severidade alta ou crítica (`--audit-level=high`). Vulnerabilidades moderadas ainda são reportadas pelo npm, mas não bloqueiam este gate. Na configuração inicial, foi removido `ts-node-dev`, que não era utilizado e introduzia uma dependência vulnerável sem correção disponível; as vulnerabilidades restantes estão abaixo do limite configurado.
 
 Não há arquivos Terraform ou outra configuração de IaC neste estágio. A análise de IaC será adicionada junto da implementação de infraestrutura, para verificar arquivos reais em vez de executar uma etapa sem alvo.
+
+## Docker local
+
+Docker Engine e Docker Compose v2 são necessários. Defina uma senha de desenvolvimento para o PostgreSQL no ambiente antes de iniciar os serviços. No PowerShell:
+
+```powershell
+$env:DB_PASSWORD = "uma-senha-local"
+docker compose up --build
+```
+
+Em shells POSIX, use `export DB_PASSWORD="uma-senha-local"` antes de executar `docker compose up --build`. O Compose mantém o PostgreSQL e o Redis acessíveis apenas na rede interna; a API é publicada em `127.0.0.1:3000`. Os dados do PostgreSQL persistem no volume `postgres-data`.
+
+Verifique a API em `http://localhost:3000/health` e as métricas em `http://localhost:3000/metrics`. Encerre com `docker compose down`; para apagar também os dados locais do banco, use `docker compose down --volumes`.
+
+O `Dockerfile` usa estágios separados para dependências, build e runtime, executa como usuário não-root e contém um healthcheck HTTP. O workflow `CI - Container` constrói a imagem em pull requests e pushes, bloqueia vulnerabilidades de severidade alta/crítica detectadas pelo Trivy e publica o SBOM CycloneDX como artefato do GitHub Actions. A imagem ainda não é publicada em registry; essa fase será tratada separadamente.
