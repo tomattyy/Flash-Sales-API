@@ -7,6 +7,7 @@
     "test": "jest",
     "dev": "node --watch src/server.ts",
     "start": "node src/server.ts",
+    "build": "tsc --project tsconfig.build.json",
     "lint": "eslint . ",
     "format": "prettier --write . ",
     "format:check": "prettier --check .",
