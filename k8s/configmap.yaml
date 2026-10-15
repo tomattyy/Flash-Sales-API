@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flash-sales-api-config
+  namespace: flash-sales
+data:
+  PORT: "3000"
+  DB_HOST: postgres
+  DB_PORT: "5432"
+  DB_USER: postgres
+  DB_NAME: flash_sales
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
