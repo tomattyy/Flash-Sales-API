@@ -11,6 +11,8 @@ on:
       - "hotfix/**"
     paths:
       - "k8s/**"
+      - "scripts/deploy-minikube.ps1"
+      - "README.md"
       - ".github/workflows/pipeline-kubernetes.yaml"
   pull_request:
     branches:
@@ -18,6 +20,8 @@ on:
       - main
     paths:
       - "k8s/**"
+      - "scripts/deploy-minikube.ps1"
+      - "README.md"
       - ".github/workflows/pipeline-kubernetes.yaml"
   workflow_dispatch:
 
@@ -32,6 +36,22 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Parse local deployment script
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            "scripts/deploy-minikube.ps1",
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_ }
+            exit 1
+          }
 
       - name: Scan Kubernetes configuration
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
