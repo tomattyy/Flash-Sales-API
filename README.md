@@ -98,3 +98,24 @@ docker compose --profile iac down
 ```
 
 O provider AWS está configurado para apontar os serviços S3 e KMS somente ao endpoint do LocalStack e usar path-style addressing para S3. As credenciais de teste são fornecidas pelo ambiente e não ficam gravadas na configuração. Não use esses comandos contra uma conta AWS real. O workflow `CI - Terraform IaC` verifica formatação, inicialização, validação e segurança e aplica/destrói a infraestrutura em um LocalStack efêmero.
+
+## Kubernetes local com Minikube
+
+Os manifests em `k8s/` executam a API, PostgreSQL com volume persistente e Redis efêmero em um namespace dedicado. A API usa probes HTTP, limites de recursos e um contexto de segurança não-root. O workflow `CI - Kubernetes` verifica os manifests com Trivy e bloqueia findings de severidade alta ou crítica. Esta configuração é para desenvolvimento local; não substitui gerenciamento de secrets ou storage de produção.
+
+Pré-requisitos: Docker Engine, Minikube, `kubectl` e a variável de ambiente `DB_PASSWORD` configurada com uma senha apenas de desenvolvimento. No PowerShell:
+
+```powershell
+$env:DB_PASSWORD = "uma-senha-local"
+minikube start --driver=docker
+minikube image build -t flash-sales-api:local .
+kubectl apply -f k8s/namespace.yaml
+kubectl create secret generic flash-sales-db --namespace flash-sales --from-literal=password="$env:DB_PASSWORD"
+kubectl apply -f k8s/
+kubectl rollout status deployment/postgres -n flash-sales
+kubectl rollout status deployment/redis -n flash-sales
+kubectl rollout status deployment/flash-sales-api -n flash-sales
+kubectl port-forward -n flash-sales service/flash-sales-api 3000:3000
+```
+
+Em outro terminal, verifique `http://localhost:3000/health` e `http://localhost:3000/metrics`. Ao atualizar a aplicação, repita `minikube image build -t flash-sales-api:local .` e execute `kubectl rollout restart deployment/flash-sales-api -n flash-sales`. Para remover a instalação local, execute `kubectl delete namespace flash-sales`; isso também apaga o volume local do PostgreSQL.
