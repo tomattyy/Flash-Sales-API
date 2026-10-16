@@ -103,12 +103,17 @@ O provider AWS está configurado para apontar os serviços S3 e KMS somente ao e
 
 Os manifests em `k8s/` executam a API, PostgreSQL com volume persistente e Redis efêmero em um namespace dedicado. Prometheus e Grafana são disponibilizados separadamente em `k8s/observability/`, com um dashboard provisionado para taxa de requisições, latência p95, erros HTTP 5xx e memória da API. As métricas usam templates de rota e um rótulo fixo para caminhos não encontrados, evitando cardinalidade por identificadores em URLs. Os serviços de monitoramento ficam internos ao cluster e os dados são efêmeros. Esta configuração é para desenvolvimento local; não substitui gerenciamento de secrets ou storage de produção.
 
+### Entrega contínua local
+
+Para publicar a versão atual no Minikube, defina `DB_PASSWORD` e `GRAFANA_ADMIN_PASSWORD` no ambiente e execute `.\scripts\deploy-minikube.ps1`. O script confirma que o contexto atual é `minikube`, constrói a imagem com Docker, carrega-a no cluster, aplica os manifests e os secrets sem imprimir suas credenciais e aguarda os rollouts da API, PostgreSQL, Redis, Prometheus e Grafana. Reexecute-o após cada atualização que queira disponibilizar localmente. O GitHub Actions valida a sintaxe do script e escaneia os manifests, mas não implanta no cluster local.
+
 Pré-requisitos: Docker Engine, Minikube, `kubectl` e a variável de ambiente `DB_PASSWORD` configurada com uma senha apenas de desenvolvimento. No PowerShell:
 
 ```powershell
 $env:DB_PASSWORD = "uma-senha-local"
 minikube start --driver=docker
-minikube image build -t flash-sales-api:local .
+docker build --tag flash-sales-api:local .
+minikube image load flash-sales-api:local
 kubectl apply -f k8s/namespace.yaml
 kubectl create secret generic flash-sales-db --namespace flash-sales --from-literal=password="$env:DB_PASSWORD"
 kubectl apply -f k8s/
