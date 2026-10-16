@@ -3,8 +3,11 @@ import { AppDataSource } from "../config/database";
 import { Order } from "../entities/Order";
 
 export class CheckoutService {
-
-  async processCheckout(eventId: string, userId: string, quantity: number): Promise<Order> {
+  async processCheckout(
+    eventId: string,
+    userId: string,
+    quantity: number,
+  ): Promise<Order> {
     const redisKey = `event:${eventId}:tickets`;
 
     const luaScript = `

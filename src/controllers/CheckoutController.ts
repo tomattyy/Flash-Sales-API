@@ -12,10 +12,17 @@ export class CheckoutController {
     }
 
     try {
-      const order = await this.checkoutService.processCheckout(eventId, userId, quantity);
+      const order = await this.checkoutService.processCheckout(
+        eventId,
+        userId,
+        quantity,
+      );
       return res.status(201).json({ message: "Checkout successful", order });
-    } catch (error: any) {
-      if (error.message === "Tickets sold out or insufficient quantity") {
+    } catch (error: unknown) {
+      if (
+        error instanceof Error &&
+        error.message === "Tickets sold out or insufficient quantity"
+      ) {
         return res.status(409).json({ error: error.message });
       }
       throw error;

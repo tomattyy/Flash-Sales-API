@@ -1,0 +1,63 @@
+name: CI - Kubernetes
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - "feature/**"
+      - "fix/**"
+      - "release/**"
+      - "hotfix/**"
+    paths:
+      - "k8s/**"
+      - "scripts/deploy-minikube.ps1"
+      - "README.md"
+      - ".github/workflows/pipeline-kubernetes.yaml"
+  pull_request:
+    branches:
+      - develop
+      - main
+    paths:
+      - "k8s/**"
+      - "scripts/deploy-minikube.ps1"
+      - "README.md"
+      - ".github/workflows/pipeline-kubernetes.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: Scan Kubernetes manifests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Parse local deployment script
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            "scripts/deploy-minikube.ps1",
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_ }
+            exit 1
+          }
+
+      - name: Scan Kubernetes configuration
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          scan-type: config
+          scan-ref: k8s
+          format: table
+          exit-code: "1"
+          severity: HIGH,CRITICAL
