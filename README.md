@@ -101,7 +101,7 @@ O provider AWS está configurado para apontar os serviços S3 e KMS somente ao e
 
 ## Kubernetes local com Minikube
 
-Os manifests em `k8s/` executam a API, PostgreSQL com volume persistente e Redis efêmero em um namespace dedicado. A API usa probes HTTP, limites de recursos e um contexto de segurança não-root. O workflow `CI - Kubernetes` verifica os manifests com Trivy e bloqueia findings de severidade alta ou crítica. Esta configuração é para desenvolvimento local; não substitui gerenciamento de secrets ou storage de produção.
+Os manifests em `k8s/` executam a API, PostgreSQL com volume persistente e Redis efêmero em um namespace dedicado. Prometheus e Grafana são disponibilizados separadamente em `k8s/observability/`, com um dashboard provisionado para taxa de requisições, latência p95, erros HTTP 5xx e memória da API. As métricas usam templates de rota e um rótulo fixo para caminhos não encontrados, evitando cardinalidade por identificadores em URLs. Os serviços de monitoramento ficam internos ao cluster e os dados são efêmeros. Esta configuração é para desenvolvimento local; não substitui gerenciamento de secrets ou storage de produção.
 
 Pré-requisitos: Docker Engine, Minikube, `kubectl` e a variável de ambiente `DB_PASSWORD` configurada com uma senha apenas de desenvolvimento. No PowerShell:
 
@@ -118,4 +118,18 @@ kubectl rollout status deployment/flash-sales-api -n flash-sales
 kubectl port-forward -n flash-sales service/flash-sales-api 3000:3000
 ```
 
-Em outro terminal, verifique `http://localhost:3000/health` e `http://localhost:3000/metrics`. Ao atualizar a aplicação, repita `minikube image build -t flash-sales-api:local .` e execute `kubectl rollout restart deployment/flash-sales-api -n flash-sales`. Para remover a instalação local, execute `kubectl delete namespace flash-sales`; isso também apaga o volume local do PostgreSQL.
+Para iniciar o stack de observabilidade, em outro terminal configure uma senha local para o Grafana e aplique os manifests:
+
+```powershell
+$env:GRAFANA_ADMIN_PASSWORD = "uma-senha-local-segura"
+kubectl apply -f k8s/observability/namespace.yaml
+kubectl create secret generic grafana-admin --namespace observability --from-literal="password=$env:GRAFANA_ADMIN_PASSWORD"
+kubectl apply -f k8s/observability/
+kubectl rollout status deployment/prometheus -n observability
+kubectl rollout status deployment/grafana -n observability
+kubectl port-forward -n observability service/grafana 3001:3000
+```
+
+No terminal da API, verifique `http://localhost:3000/health` e `http://localhost:3000/metrics`. Acesse o Grafana em `http://localhost:3001` com o usuário `admin` e a senha definida no ambiente; o dashboard **Flash Sales API** é provisionado automaticamente. Para conferir se o Prometheus coleta a API, encaminhe sua porta em outro terminal com `kubectl port-forward -n observability service/prometheus 9090:9090` e verifique `http://localhost:9090/targets`. Ao atualizar a aplicação, repita `minikube image build -t flash-sales-api:local .` e execute `kubectl rollout restart deployment/flash-sales-api -n flash-sales`.
+
+Para remover a instalação local e seus dados efêmeros, execute `kubectl delete namespace observability` e `kubectl delete namespace flash-sales`; isso também apaga o volume local do PostgreSQL.
